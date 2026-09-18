@@ -876,19 +876,19 @@ const CROP = 224;
 const MODELS = {
   efficientnet_lite0_int8: {
     label: 'EfficientNet-Lite0 INT8',
-    path: '/models/efficientnet_lite0_int8.onnx',
+    path: './models/efficientnet_lite0_int8.onnx',
     acc: 0.965,
     warning: null,
   },
   efficientnet_lite0_fp32: {
     label: 'EfficientNet-Lite0 FP32',
-    path: '/models/efficientnet_lite0_fp32.onnx',
+    path: './models/efficientnet_lite0_fp32.onnx',
     acc: 1.0,
     warning: null,
   },
   mobilenet_v3_small_int8: {
     label: 'MobileNetV3-Small INT8',
-    path: '/models/mobilenet_v3_small_int8.onnx',
+    path: './models/mobilenet_v3_small_int8.onnx',
     acc: 0.325,
     warning: 'Experimental — severe quantization-induced accuracy loss (32.5% clean accuracy). For research reproduction only.',
   },
