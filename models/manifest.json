@@ -1,0 +1,34 @@
+{
+  "models": {
+    "mobilenet_v3_small": {
+      "fp32_onnx": "onnx_models/mobilenet_v3_small_fp32.onnx",
+      "fp32_size_mb": 8.084,
+      "int8_onnx": "onnx_models/mobilenet_v3_small_int8.onnx",
+      "int8_size_mb": 1.797,
+      "int8_error": null,
+      "int4_onnx": "onnx_models/mobilenet_v3_small_int4.onnx",
+      "int4_size_mb": 3.907,
+      "int4_error": null
+    },
+    "efficientnet_lite0": {
+      "fp32_onnx": "onnx_models/efficientnet_lite0_fp32.onnx",
+      "fp32_size_mb": 12.86,
+      "int8_onnx": "onnx_models/efficientnet_lite0_int8.onnx",
+      "int8_size_mb": 3.641,
+      "int8_error": null,
+      "int4_onnx": "onnx_models/efficientnet_lite0_int4.onnx",
+      "int4_size_mb": 12.824,
+      "int4_error": null
+    },
+    "mobilevit_s": {
+      "fp32_onnx": "onnx_models/mobilevit_s_fp32.onnx",
+      "fp32_size_mb": 19.064,
+      "int8_onnx": "onnx_models/mobilevit_s_int8.onnx",
+      "int8_size_mb": 5.648,
+      "int8_error": null,
+      "int4_onnx": "onnx_models/mobilevit_s_int4.onnx",
+      "int4_size_mb": 9.795,
+      "int4_error": null
+    }
+  }
+}

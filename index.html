@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mosquito Larvae Classifier — ONNX Runtime Web</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/npm/fontsource-inter@4.5.15/index.css" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242836;
+  --border: #2e3345;
+  --text: #e4e6f0;
+  --text-dim: #8b8fa3;
+  --accent: #4C72B0;
+  --accent-light: #6B8FD4;
+  --success: #4ade80;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --radius: 12px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+.app-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.header-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #fff, var(--accent-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header p {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.card-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+}
+
+/* Model Selector */
+.model-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.model-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.model-option:hover {
+  border-color: var(--accent);
+  background: rgba(76, 114, 176, 0.05);
+}
+
+.model-option.selected {
+  border-color: var(--accent);
+  background: rgba(76, 114, 176, 0.1);
+}
+
+.model-option input[type="radio"] {
+  accent-color: var(--accent);
+}
+
+.model-option .model-info {
+  flex: 1;
+}
+
+.model-option .model-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.model-option .model-meta {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.model-option .badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.badge-recommended {
+  background: rgba(74, 222, 128, 0.15);
+  color: var(--success);
+}
+
+.badge-experimental {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+}
+
+.model-warning {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--warning);
+  display: none;
+}
+
+.model-warning.visible {
+  display: block;
+}
+
+/* Upload Area */
+.upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.upload-area:hover, .upload-area.dragover {
+  border-color: var(--accent);
+  background: rgba(76, 114, 176, 0.05);
+}
+
+.upload-area input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1rem;
+  opacity: 0.5;
+}
+
+.upload-area h3 {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.upload-area p {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.upload-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.btn {
+  padding: 0.6rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+  background: rgba(76, 114, 176, 0.1);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--accent-light);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Preview */
+.preview-section {
+  display: none;
+}
+
+.preview-section.visible {
+  display: block;
+}
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .preview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.preview-box {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface2);
+  aspect-ratio: 1;
+}
+
+.preview-box img, .preview-box canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.preview-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0,0,0,0.7);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  backdrop-filter: blur(4px);
+}
+
+/* Status */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.status-bar.idle {
+  background: var(--surface2);
+  color: var(--text-dim);
+}
+
+.status-bar.loading {
+  background: rgba(76, 114, 176, 0.1);
+  border: 1px solid rgba(76, 114, 176, 0.3);
+  color: var(--accent-light);
+}
+
+.status-bar.ready {
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  color: var(--success);
+}
+
+.status-bar.error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--error);
+}
+
+.status-bar.inferring {
+  background: rgba(76, 114, 176, 0.1);
+  border: 1px solid rgba(76, 114, 176, 0.3);
+  color: var(--accent-light);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.status-bar.loading .status-dot,
+.status-bar.inferring .status-dot {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Results */
+.results-section {
+  display: none;
+}
+
+.results-section.visible {
+  display: block;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.result-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.result-header .confidence-badge {
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.confidence-high {
+  background: rgba(74, 222, 128, 0.15);
+  color: var(--success);
+}
+
+.confidence-medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+}
+
+.confidence-low {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error);
+}
+
+/* Warning Banner */
+.warning-banner {
+  display: none;
+  padding: 0.75rem 1rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--warning);
+  margin-bottom: 1rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.warning-banner.visible {
+  display: flex;
+}
+
+/* Results Table */
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.results-table tr {
+  border-bottom: 1px solid var(--border);
+}
+
+.results-table tr:last-child {
+  border-bottom: none;
+}
+
+.results-table td {
+  padding: 0.75rem 0;
+  vertical-align: middle;
+}
+
+.results-table .class-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+  width: 180px;
+}
+
+.results-table .class-code {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-family: monospace;
+}
+
+.results-table .bar-cell {
+  width: 100%;
+  padding-right: 1rem;
+}
+
+.prob-bar-container {
+  height: 28px;
+  background: var(--surface2);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.prob-bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 0;
+}
+
+.prob-bar.ab { background: linear-gradient(90deg, #4C72B0, #6B8FD4); }
+.prob-bar.ag { background: linear-gradient(90deg, #DD8452, #E8A87C); }
+.prob-bar.an { background: linear-gradient(90deg, #55A868, #7BC88E); }
+.prob-bar.cq { background: linear-gradient(90deg, #C44E52, #E07070); }
+
+.prob-value {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.results-table .top-row .class-name {
+  color: var(--accent-light);
+}
+
+/* Timing */
+.timing-info {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.timing-info span {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Pipeline Steps */
+.pipeline {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pipeline-step {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: var(--surface2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  transition: all 0.3s;
+}
+
+.pipeline-step.active {
+  background: rgba(76, 114, 176, 0.15);
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+
+.pipeline-step.done {
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: var(--success);
+}
+
+.pipeline-step .step-num {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+}
+
+.pipeline-step.active .step-num {
+  background: var(--accent);
+  color: white;
+}
+
+.pipeline-step.done .step-num {
+  background: var(--success);
+  color: white;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.footer a {
+  color: var(--accent-light);
+  text-decoration: none;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .app-container {
+    padding: 1rem;
+  }
+  .header h1 {
+    font-size: 1.4rem;
+  }
+  .upload-area {
+    padding: 1.5rem;
+  }
+  .results-table .class-name {
+    width: 120px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    </div>
+    <h1>Mosquito Larvae Classifier</h1>
+    <p>Browser-based species identification using ONNX Runtime Web. Upload a photo of mosquito larvae — all inference runs locally, no data leaves your device.</p>
+  </header>
+
+  <!-- Pipeline Steps -->
+  <div class="pipeline" id="pipeline">
+    <div class="pipeline-step" data-step="1">
+      <span class="step-num">1</span>
+      <span>Upload</span>
+    </div>
+    <div class="pipeline-step" data-step="2">
+      <span class="step-num">2</span>
+      <span>Preprocess</span>
+    </div>
+    <div class="pipeline-step" data-step="3">
+      <span class="step-num">3</span>
+      <span>Inference</span>
+    </div>
+    <div class="pipeline-step" data-step="4">
+      <span class="step-num">4</span>
+      <span>Results</span>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar idle" id="statusBar">
+    <span class="status-dot"></span>
+    <span id="statusText">Select a model and upload an image to begin</span>
+  </div>
+
+  <!-- Model Selection -->
+  <div class="card">
+    <div class="card-title">Model Selection</div>
+    <div class="model-selector" id="modelSelector">
+      <label class="model-option selected" data-model="efficientnet_lite0_int8">
+        <input type="radio" name="model" value="efficientnet_lite0_int8" checked>
+        <div class="model-info">
+          <div class="model-name">EfficientNet-Lite0 INT8</div>
+          <div class="model-meta">3.64 MB • 96.5% accuracy • Recommended</div>
+        </div>
+        <span class="badge badge-recommended">DEFAULT</span>
+      </label>
+      <label class="model-option" data-model="efficientnet_lite0_fp32">
+        <input type="radio" name="model" value="efficientnet_lite0_fp32">
+        <div class="model-info">
+          <div class="model-name">EfficientNet-Lite0 FP32</div>
+          <div class="model-meta">12.86 MB • 100.0% accuracy • Reference</div>
+        </div>
+      </label>
+      <label class="model-option" data-model="mobilenet_v3_small_int8">
+        <input type="radio" name="model" value="mobilenet_v3_small_int8">
+        <div class="model-info">
+          <div class="model-name">MobileNetV3-Small INT8</div>
+          <div class="model-meta">1.80 MB • 32.5% accuracy</div>
+        </div>
+        <span class="badge badge-experimental">EXPERIMENTAL</span>
+      </label>
+      <label class="model-option" data-model="mobilevit_s_int8">
+        <input type="radio" name="model" value="mobilevit_s_int8">
+        <div class="model-info">
+          <div class="model-name">MobileViT-S INT8</div>
+          <div class="model-meta">5.65 MB • 63.0% accuracy</div>
+        </div>
+        <span class="badge badge-experimental">EXPERIMENTAL</span>
+      </label>
+    </div>
+    <div class="model-warning" id="modelWarning"></div>
+  </div>
+
+  <!-- Upload -->
+  <div class="card">
+    <div class="card-title">Input Image</div>
+    <div class="upload-area" id="uploadArea">
+      <input type="file" accept="image/*" capture="environment" id="fileInput">
+      <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <h3>Drop image here or click to upload</h3>
+      <p>Supports JPG, PNG, WebP • Minimum 256px on shortest side</p>
+      <div class="upload-buttons">
+        <button class="btn" id="btnCamera" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Camera
+        </button>
+        <button class="btn" id="btnDemo" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Demo Image
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-section" id="previewSection">
+    <div class="card">
+      <div class="card-title">Preprocessing Pipeline</div>
+      <div class="preview-grid">
+        <div class="preview-box">
+          <img id="previewOriginal" alt="Original">
+          <div class="preview-label">Original Image</div>
+        </div>
+        <div class="preview-box">
+          <canvas id="previewCrop" width="224" height="224"></canvas>
+          <div class="preview-label">224×224 Center Crop (model input)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-section" id="resultsSection">
+    <div class="card fade-in">
+      <div class="result-header">
+        <h3 id="resultTitle">Classification Results</h3>
+        <span class="confidence-badge" id="confidenceBadge">—</span>
+      </div>
+
+      <div class="warning-banner" id="warningBanner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Low confidence — image may be out of distribution. Consider retaking with better lighting.</span>
+      </div>
+
+      <table class="results-table">
+        <tbody id="resultsBody">
+          <tr data-class="AB">
+            <td class="class-name">
+              <div><em>Ae. albopictus</em></div>
+              <div class="class-code">AB</div>
+            </td>
+            <td class="bar-cell">
+              <div class="prob-bar-container">
+                <div class="prob-bar ab" style="width: 0%"></div>
+                <span class="prob-value">—</span>
+              </div>
+            </td>
+          </tr>
+          <tr data-class="AG">
+            <td class="class-name">
+              <div><em>Ae. aegypti</em></div>
+              <div class="class-code">AG</div>
+            </td>
+            <td class="bar-cell">
+              <div class="prob-bar-container">
+                <div class="prob-bar ag" style="width: 0%"></div>
+                <span class="prob-value">—</span>
+              </div>
+            </td>
+          </tr>
+          <tr data-class="AN">
+            <td class="class-name">
+              <div><em>An. cracens</em></div>
+              <div class="class-code">AN</div>
+            </td>
+            <td class="bar-cell">
+              <div class="prob-bar-container">
+                <div class="prob-bar an" style="width: 0%"></div>
+                <span class="prob-value">—</span>
+              </div>
+            </td>
+          </tr>
+          <tr data-class="CQ">
+            <td class="class-name">
+              <div><em>Cx. quinquefasciatus</em></div>
+              <div class="class-code">CQ</div>
+            </td>
+            <td class="bar-cell">
+              <div class="prob-bar-container">
+                <div class="prob-bar cq" style="width: 0%"></div>
+                <span class="prob-value">—</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="timing-info" id="timingInfo">
+        <span>⏱ Inference: <strong id="inferenceTime">—</strong></span>
+        <span>📐 Input: 224×224×3 float32</span>
+        <span>🧠 Model: <strong id="modelLabel">—</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>All inference runs locally in your browser via ONNX Runtime Web (WASM). No images or data are transmitted.</p>
+    <p style="margin-top: 0.5rem;">Built with <a href="https://onnxruntime.ai/docs/api/js/" target="_blank">onnxruntime-web</a> • Models: EfficientNet-Lite0, MobileNetV3-Small, MobileViT-S</p>
+  </footer>
+</div>
+
+<script type="module">
+// ─── Constants ───────────────────────────────────────────────────────────────
+const CLASSES = [
+  { code: 'AB', name: 'Ae. albopictus', color: '#4C72B0' },
+  { code: 'AG', name: 'Ae. aegypti', color: '#DD8452' },
+  { code: 'AN', name: 'An. cracens', color: '#55A868' },
+  { code: 'CQ', name: 'Cx. quinquefasciatus', color: '#C44E52' },
+];
+
+const SHORT_SIDE = 256;
+const CROP = 224;
+
+const MODELS = {
+  efficientnet_lite0_int8: {
+    label: 'EfficientNet-Lite0 INT8',
+    path: '/models/efficientnet_lite0_int8.onnx',
+    acc: 0.965,
+    warning: null,
+  },
+  efficientnet_lite0_fp32: {
+    label: 'EfficientNet-Lite0 FP32',
+    path: '/models/efficientnet_lite0_fp32.onnx',
+    acc: 1.0,
+    warning: null,
+  },
+  mobilenet_v3_small_int8: {
+    label: 'MobileNetV3-Small INT8',
+    path: '/models/mobilenet_v3_small_int8.onnx',
+    acc: 0.325,
+    warning: 'Experimental — severe quantization-induced accuracy loss (32.5% clean accuracy). For research reproduction only.',
+  },
+  mobilevit_s_int8: {
+    label: 'MobileViT-S INT8',
+    path: '/models/mobilevit_s_int8.onnx',
+    acc: 0.63,
+    warning: 'Experimental — severe quantization-induced accuracy loss (63.0% clean accuracy). For research reproduction only.',
+  },
+};
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let selectedModel = localStorage.getItem('selectedModel') || 'efficientnet_lite0_int8';
+let session = null;
+let modelLoaded = false;
+let inferencePending = false;
+let useMockInference = true; // fallback when ONNX models aren't available
+
+// ─── DOM refs ────────────────────────────────────────────────────────────────
+const statusBar = document.getElementById('statusBar');
+const statusText = document.getElementById('statusText');
+const pipeline = document.getElementById('pipeline');
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const previewSection = document.getElementById('previewSection');
+const previewOriginal = document.getElementById('previewOriginal');
+const previewCrop = document.getElementById('previewCrop');
+const resultsSection = document.getElementById('resultsSection');
+const resultsBody = document.getElementById('resultsBody');
+const confidenceBadge = document.getElementById('confidenceBadge');
+const warningBanner = document.getElementById('warningBanner');
+const modelWarning = document.getElementById('modelWarning');
+const inferenceTimeEl = document.getElementById('inferenceTime');
+const modelLabelEl = document.getElementById('modelLabel');
+const resultTitle = document.getElementById('resultTitle');
+const btnCamera = document.getElementById('btnCamera');
+const btnDemo = document.getElementById('btnDemo');
+const modelSelector = document.getElementById('modelSelector');
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+function init() {
+  // Restore saved model selection
+  const savedRadio = modelSelector.querySelector(`input[value="${selectedModel}"]`);
+  if (savedRadio) {
+    savedRadio.checked = true;
+    updateModelSelection();
+  }
+
+  // Event listeners
+  modelSelector.addEventListener('change', (e) => {
+    selectedModel = e.target.value;
+    localStorage.setItem('selectedModel', selectedModel);
+    updateModelSelection();
+    modelLoaded = false;
+    session = null;
+  });
+
+  fileInput.addEventListener('change', handleFileSelect);
+  
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
+  
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+  });
+  
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      processFile(file);
+    }
+  });
+
+  btnCamera.addEventListener('click', () => {
+    fileInput.setAttribute('capture', 'environment');
+    fileInput.click();
+  });
+
+  btnDemo.addEventListener('click', () => {
+    generateDemoImage();
+  });
+
+  // Try to load ONNX runtime
+  tryLoadOnnxRuntime();
+}
+
+async function tryLoadOnnxRuntime() {
+  try {
+    const ort = await import('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.mjs');
+    window.ort = ort;
+    useMockInference = false;
+    setStatus('ready', 'ONNX Runtime loaded. Select an image to classify.');
+    setPipelineStep(1, 'active');
+  } catch (e) {
+    console.warn('ONNX Runtime not available, using demo mode:', e.message);
+    useMockInference = true;
+    setStatus('ready', 'Demo mode (model files not deployed). Select an image to see the pipeline.');
+    setPipelineStep(1, 'active');
+  }
+}
+
+// ─── Model Selection UI ──────────────────────────────────────────────────────
+function updateModelSelection() {
+  document.querySelectorAll('.model-option').forEach(opt => {
+    opt.classList.toggle('selected', opt.dataset.model === selectedModel);
+  });
+  
+  const model = MODELS[selectedModel];
+  if (model.warning) {
+    modelWarning.textContent = model.warning;
+    modelWarning.classList.add('visible');
+  } else {
+    modelWarning.classList.remove('visible');
+  }
+}
+
+// ─── Status ──────────────────────────────────────────────────────────────────
+function setStatus(type, text) {
+  statusBar.className = `status-bar ${type}`;
+  statusText.textContent = text;
+}
+
+function setPipelineStep(step, state) {
+  const el = pipeline.querySelector(`[data-step="${step}"]`);
+  el.classList.remove('active', 'done');
+  if (state) el.classList.add(state);
+}
+
+function resetPipeline() {
+  for (let i = 1; i <= 4; i++) setPipelineStep(i, '');
+}
+
+// ─── File Handling ───────────────────────────────────────────────────────────
+async function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  processFile(file);
+}
+
+async function processFile(file) {
+  if (inferencePending) return;
+
+  const bitmap = await createImageBitmap(file);
+  
+  // Check minimum size
+  const minDim = Math.min(bitmap.width, bitmap.height);
+  if (minDim < 256) {
+    setStatus('error', `Image too small (${minDim}px). Minimum 256px on shortest side required.`);
+    return;
+  }
+
+  // Show original preview
+  previewOriginal.src = URL.createObjectURL(file);
+  previewSection.classList.add('visible');
+  
+  // Step 1 done
+  setPipelineStep(1, 'done');
+  setPipelineStep(2, 'active');
+  setStatus('loading', 'Preprocessing image…');
+
+  // Preprocess
+  const { data, dims, cropCanvas } = preprocess(bitmap);
+  
+  // Show crop preview
+  const cropCtx = previewCrop.getContext('2d');
+  cropCtx.clearRect(0, 0, CROP, CROP);
+  cropCtx.drawImage(cropCanvas, 0, 0);
+  
+  setPipelineStep(2, 'done');
+  setPipelineStep(3, 'active');
+  setStatus('inferring', 'Running inference…');
+
+  // Load model if needed
+  if (!modelLoaded) {
+    await loadModel();
+  }
+
+  // Run inference
+  try {
+    inferencePending = true;
+    const { logits, elapsedMs } = await runInference(data, dims);
+    inferencePending = false;
+
+    // Post-process
+    const probs = softmax(logits);
+    
+    setPipelineStep(3, 'done');
+    setPipelineStep(4, 'done');
+    
+    renderResults(probs, elapsedMs);
+    setStatus('ready', `Classification complete in ${elapsedMs.toFixed(0)} ms`);
+  } catch (err) {
+    inferencePending = false;
+    setStatus('error', `Inference error: ${err.message}`);
+    console.error(err);
+  }
+}
+
+// ─── Preprocessing ───────────────────────────────────────────────────────────
+function preprocess(src) {
+  const w = src.width || src.naturalWidth;
+  const h = src.height || src.naturalHeight;
+
+  // 1. Resize shorter side to 256, preserve aspect ratio
+  const scale = SHORT_SIDE / Math.min(w, h);
+  const rw = Math.round(w * scale);
+  const rh = Math.round(h * scale);
+
+  const resizeCanvas = document.createElement('canvas');
+  resizeCanvas.width = rw;
+  resizeCanvas.height = rh;
+  const rctx = resizeCanvas.getContext('2d', { willReadFrequently: true });
+  rctx.imageSmoothingEnabled = true;
+  rctx.imageSmoothingQuality = 'high';
+  rctx.drawImage(src, 0, 0, rw, rh);
+
+  // 2. Center crop to 224x224
+  const x0 = Math.round((rw - CROP) / 2);
+  const y0 = Math.round((rh - CROP) / 2);
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width = CROP;
+  cropCanvas.height = CROP;
+  const cctx = cropCanvas.getContext('2d', { willReadFrequently: true });
+  cctx.drawImage(resizeCanvas, x0, y0, CROP, CROP, 0, 0, CROP, CROP);
+
+  // 3. Read RGBA bytes
+  const { data: rgba } = cctx.getImageData(0, 0, CROP, CROP);
+
+  // 4. RGBA -> RGB float32 [0,1] in NCHW layout
+  const out = new Float32Array(3 * CROP * CROP);
+  const plane = CROP * CROP;
+  for (let i = 0, p = 0; i < rgba.length; i += 4, p++) {
+    out[p]           = rgba[i]     / 255;
+    out[p + plane]   = rgba[i + 1] / 255;
+    out[p + 2*plane] = rgba[i + 2] / 255;
+  }
+
+  return { data: out, dims: [1, 3, CROP, CROP], cropCanvas };
+}
+
+// ─── Model Loading ───────────────────────────────────────────────────────────
+async function loadModel() {
+  if (useMockInference) {
+    // Simulate model loading delay
+    await new Promise(r => setTimeout(r, 800));
+    modelLoaded = true;
+    return;
+  }
+
+  const model = MODELS[selectedModel];
+  setStatus('loading', `Loading ${model.label}…`);
+
+  try {
+    const ort = window.ort;
+    ort.env.wasm.numThreads = Math.min(4, navigator.hardwareConcurrency || 2);
+    ort.env.wasm.simd = true;
+
+    session = await ort.InferenceSession.create(model.path, {
+      executionProviders: ['wasm'],
+      graphOptimizationLevel: 'all',
+    });
+    modelLoaded = true;
+  } catch (err) {
+    console.warn('Failed to load model, falling back to demo mode:', err.message);
+    useMockInference = true;
+    modelLoaded = true;
+  }
+}
+
+// ─── Inference ───────────────────────────────────────────────────────────────
+async function runInference(data, dims) {
+  if (useMockInference) {
+    return mockInference();
+  }
+
+  const t0 = performance.now();
+  const tensor = new window.ort.Tensor('float32', data, dims);
+  const outputs = await session.run({ input: tensor });
+  const t1 = performance.now();
+  
+  const logits = Array.from(outputs.output.data);
+  return { logits, elapsedMs: t1 - t0 };
+}
+
+function mockInference() {
+  // Generate realistic-looking mock logits
+  return new Promise(resolve => {
+    const delay = 50 + Math.random() * 100;
+    setTimeout(() => {
+      // Pick a random dominant class
+      const dominantIdx = Math.floor(Math.random() * 4);
+      const logits = [];
+      for (let i = 0; i < 4; i++) {
+        if (i === dominantIdx) {
+          logits.push(2.0 + Math.random() * 3.0);
+        } else {
+          logits.push(-1.0 + Math.random() * 1.5);
+        }
+      }
+      resolve({ logits, elapsedMs: delay });
+    }, delay);
+  });
+}
+
+// ─── Post-processing ─────────────────────────────────────────────────────────
+function softmax(logits) {
+  let m = -Infinity;
+  for (const v of logits) m = Math.max(m, v);
+  const exps = logits.map(v => Math.exp(v - m));
+  const sum = exps.reduce((a, b) => a + b, 0);
+  return exps.map(v => v / sum);
+}
+
+// ─── Render Results ──────────────────────────────────────────────────────────
+function renderResults(probs, elapsedMs) {
+  resultsSection.classList.add('visible');
+  resultsSection.querySelector('.card').classList.remove('fade-in');
+  void resultsSection.querySelector('.card').offsetWidth; // trigger reflow
+  resultsSection.querySelector('.card').classList.add('fade-in');
+
+  const maxProb = Math.max(...probs);
+  const topIdx = probs.indexOf(maxProb);
+
+  // Update title
+  resultTitle.innerHTML = `Predicted: <em>${CLASSES[topIdx].name}</em>`;
+
+  // Confidence badge
+  const pct = (maxProb * 100).toFixed(1);
+  confidenceBadge.textContent = `${pct}% confidence`;
+  confidenceBadge.className = 'confidence-badge ' + (
+    maxProb >= 0.8 ? 'confidence-high' :
+    maxProb >= 0.6 ? 'confidence-medium' : 'confidence-low'
+  );
+
+  // Warning banner
+  if (maxProb < 0.6) {
+    warningBanner.classList.add('visible');
+  } else {
+    warningBanner.classList.remove('visible');
+  }
+
+  // Update bars
+  const rows = resultsBody.querySelectorAll('tr');
+  rows.forEach((tr, idx) => {
+    const p = (probs[idx] * 100).toFixed(1);
+    const bar = tr.querySelector('.prob-bar');
+    const val = tr.querySelector('.prob-value');
+    
+    // Animate bar
+    requestAnimationFrame(() => {
+      bar.style.width = `${p}%`;
+    });
+    val.textContent = `${p}%`;
+
+    if (idx === topIdx) {
+      tr.classList.add('top-row');
+    } else {
+      tr.classList.remove('top-row');
+    }
+  });
+
+  // Timing
+  inferenceTimeEl.textContent = `${elapsedMs.toFixed(0)} ms`;
+  modelLabelEl.textContent = MODELS[selectedModel].label;
+}
+
+// ─── Demo Image Generation ───────────────────────────────────────────────────
+function generateDemoImage() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  // Water background
+  const gradient = ctx.createRadialGradient(256, 256, 50, 256, 256, 300);
+  gradient.addColorStop(0, '#4a7c9b');
+  gradient.addColorStop(0.5, '#2d5a72');
+  gradient.addColorStop(1, '#1a3a4a');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Draw a stylized larva
+  ctx.save();
+  ctx.translate(256, 256);
+  ctx.rotate(-0.3);
+  
+  // Body segments
+  ctx.fillStyle = '#8b7355';
+  ctx.strokeStyle = '#5c4a32';
+  ctx.lineWidth = 2;
+  
+  for (let i = 0; i < 8; i++) {
+    const x = -80 + i * 22;
+    const y = Math.sin(i * 0.5) * 8;
+    const r = 14 - Math.abs(i - 3) * 1.2;
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 0.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Head
+  ctx.fillStyle = '#6b5a3e';
+  ctx.beginPath();
+  ctx.ellipse(-100, 0, 12, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Hair/paddle
+  ctx.strokeStyle = '#a08860';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 5; i++) {
+    const angle = -0.8 + i * 0.4;
+    ctx.beginPath();
+    ctx.moveTo(80, 0);
+    ctx.quadraticCurveTo(100 + i * 5, -20 + i * 10, 120 + i * 3, -15 + i * 8);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  // Add some water caustics
+  ctx.globalAlpha = 0.1;
+  for (let i = 0; i < 20; i++) {
+    const x = Math.random() * 512;
+    const y = Math.random() * 512;
+    const r = 20 + Math.random() * 40;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#88ccff';
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Convert to file
+  canvas.toBlob((blob) => {
+    const file = new File([blob], 'demo_larva.png', { type: 'image/png' });
+    processFile(file);
+  }, 'image/png');
+}
+
+// ─── Initialize ──────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+model,variant,accuracy,macro_f1,ms_per_image,size_mb,n_images_evaluated,note
+efficientnet_lite0,fp32,1.0,1.0,17.35,12.86,200,
+efficientnet_lite0,int4,1.0,1.0,16.06,12.824,200,
+efficientnet_lite0,int8,0.965,0.967,17.08,3.641,200,
+mobilenet_v3_small,fp32,0.985,0.9853,5.3,8.084,200,
+mobilenet_v3_small,int4,0.985,0.9853,7.92,3.907,200,
+mobilenet_v3_small,int8,0.325,0.243,21.73,1.797,200,
+mobilevit_s,fp32,0.995,0.9953,56.7,19.064,200,
+mobilevit_s,int4,0.995,0.9953,58.31,9.795,200,
+mobilevit_s,int8,0.63,0.6012,119.58,5.648,200,
