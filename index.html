@@ -903,15 +903,15 @@ const MODELS = {
 // All deployed model variants, used by the on-device latency benchmark below.
 // Sizes taken from the deployed /models directory listing.
 const BENCHMARK_MODELS = [
-  { key: 'efficientnet_lite0_fp32',    label: 'EfficientNet-Lite0 FP32',    path: '/models/efficientnet_lite0_fp32.onnx',    sizeMB: 12.86 },
-  { key: 'efficientnet_lite0_int8',    label: 'EfficientNet-Lite0 INT8',    path: '/models/efficientnet_lite0_int8.onnx',    sizeMB: 3.64 },
-  { key: 'efficientnet_lite0_int4',    label: 'EfficientNet-Lite0 INT4',    path: '/models/efficientnet_lite0_int4.onnx',    sizeMB: 12.82 },
-  { key: 'mobilenet_v3_small_fp32',    label: 'MobileNetV3-Small FP32',     path: '/models/mobilenet_v3_small_fp32.onnx',    sizeMB: 8.08 },
-  { key: 'mobilenet_v3_small_int8',    label: 'MobileNetV3-Small INT8',     path: '/models/mobilenet_v3_small_int8.onnx',    sizeMB: 1.80 },
-  { key: 'mobilenet_v3_small_int4',    label: 'MobileNetV3-Small INT4',     path: '/models/mobilenet_v3_small_int4.onnx',    sizeMB: 3.91 },
-  { key: 'mobilevit_s_fp32',           label: 'MobileViT-S FP32',           path: '/models/mobilevit_s_fp32.onnx',           sizeMB: 19.06 },
-  { key: 'mobilevit_s_int8',           label: 'MobileViT-S INT8',           path: '/models/mobilevit_s_int8.onnx',           sizeMB: 5.65 },
-  { key: 'mobilevit_s_int4',           label: 'MobileViT-S INT4',           path: '/models/mobilevit_s_int4.onnx',           sizeMB: 9.79 },
+  { key: 'efficientnet_lite0_fp32',    label: 'EfficientNet-Lite0 FP32',    path: './models/efficientnet_lite0_fp32.onnx',    sizeMB: 12.86 },
+  { key: 'efficientnet_lite0_int8',    label: 'EfficientNet-Lite0 INT8',    path: './models/efficientnet_lite0_int8.onnx',    sizeMB: 3.64 },
+  { key: 'efficientnet_lite0_int4',    label: 'EfficientNet-Lite0 INT4',    path: './models/efficientnet_lite0_int4.onnx',    sizeMB: 12.82 },
+  { key: 'mobilenet_v3_small_fp32',    label: 'MobileNetV3-Small FP32',     path: './models/mobilenet_v3_small_fp32.onnx',    sizeMB: 8.08 },
+  { key: 'mobilenet_v3_small_int8',    label: 'MobileNetV3-Small INT8',     path: './models/mobilenet_v3_small_int8.onnx',    sizeMB: 1.80 },
+  { key: 'mobilenet_v3_small_int4',    label: 'MobileNetV3-Small INT4',     path: './models/mobilenet_v3_small_int4.onnx',    sizeMB: 3.91 },
+  { key: 'mobilevit_s_fp32',           label: 'MobileViT-S FP32',           path: './models/mobilevit_s_fp32.onnx',           sizeMB: 19.06 },
+  { key: 'mobilevit_s_int8',           label: 'MobileViT-S INT8',           path: './models/mobilevit_s_int8.onnx',           sizeMB: 5.65 },
+  { key: 'mobilevit_s_int4',           label: 'MobileViT-S INT4',           path: './models/mobilevit_s_int4.onnx',           sizeMB: 9.79 },
 ];
 const BENCH_WARMUP_RUNS = 2;
 const BENCH_TIMED_RUNS = 8;
