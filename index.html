@@ -170,6 +170,57 @@ body {
   display: block;
 }
 
+/* Parameter Count Display */
+.param-count-display {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.param-count-display.visible {
+  display: flex;
+}
+
+.param-count-display .param-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(76, 114, 176, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.param-count-display .param-info {
+  flex: 1;
+}
+
+.param-count-display .param-label {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.param-count-display .param-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.param-count-display .param-detail {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
 /* Upload Area */
 .upload-area {
   border: 2px dashed var(--border);
@@ -498,6 +549,7 @@ body {
   gap: 1.5rem;
   font-size: 0.75rem;
   color: var(--text-dim);
+  flex-wrap: wrap;
 }
 
 .timing-info span {
@@ -695,13 +747,32 @@ body {
       </label>
     </div>
     <div class="model-warning" id="modelWarning"></div>
+    
+    <!-- Parameter Count Display -->
+    <div class="param-count-display" id="paramCountDisplay">
+      <div class="param-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-light)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2"/>
+          <rect x="9" y="9" width="6" height="6"/>
+          <line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/>
+          <line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/>
+          <line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/>
+          <line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>
+        </svg>
+      </div>
+      <div class="param-info">
+        <div class="param-label">Loaded Model Parameters</div>
+        <div class="param-value" id="paramCountValue">—</div>
+        <div class="param-detail" id="paramCountDetail"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Benchmark -->
   <div class="card">
     <div class="card-title">On-Device Latency Benchmark</div>
     <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:1rem;">
-      Loads every model variant and runs timed inference passes directly in this browser, so you can see real load time and latency on your device.
+      Loads every model variant and runs timed inference passes directly in this browser, so you can see real load time, parameter count, and latency on your device.
     </p>
     <div class="upload-buttons" style="justify-content:flex-start;margin:0;">
       <button class="btn btn-primary" id="btnBenchmark" type="button">
@@ -717,11 +788,12 @@ body {
 
     <div id="benchResultsWrap" style="display:none;margin-top:1rem;">
       <div style="overflow-x:auto;">
-        <table class="results-table" id="benchTable" style="min-width:520px;">
+        <table class="results-table" id="benchTable" style="min-width:620px;">
           <thead>
             <tr style="border-bottom:1px solid var(--border);">
               <th style="text-align:left;font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;padding-bottom:0.5rem;">Model</th>
               <th style="text-align:left;font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;padding-bottom:0.5rem;">Size</th>
+              <th style="text-align:left;font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;padding-bottom:0.5rem;">Params</th>
               <th style="text-align:left;font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;padding-bottom:0.5rem;">Load</th>
               <th style="text-align:left;font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;padding-bottom:0.5rem;">Avg Latency</th>
               <th style="text-align:left;font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;padding-bottom:0.5rem;">Min / Max</th>
@@ -850,6 +922,7 @@ body {
         <span>⏱ Inference: <strong id="inferenceTime">—</strong></span>
         <span>📐 Input: 224×224×3 float32</span>
         <span>🧠 Model: <strong id="modelLabel">—</strong></span>
+        <span>🔢 Params: <strong id="paramCountInline">—</strong></span>
       </div>
     </div>
   </div>
@@ -901,7 +974,6 @@ const MODELS = {
 };
 
 // All deployed model variants, used by the on-device latency benchmark below.
-// Sizes taken from the deployed /models directory listing.
 const BENCHMARK_MODELS = [
   { key: 'efficientnet_lite0_fp32',    label: 'EfficientNet-Lite0 FP32',    path: './models/efficientnet_lite0_fp32.onnx',    sizeMB: 12.86 },
   { key: 'efficientnet_lite0_int8',    label: 'EfficientNet-Lite0 INT8',    path: './models/efficientnet_lite0_int8.onnx',    sizeMB: 3.64 },
@@ -921,9 +993,11 @@ let selectedModel = localStorage.getItem('selectedModel') || 'efficientnet_lite0
 let session = null;
 let modelLoaded = false;
 let inferencePending = false;
-let useMockInference = true; // fallback when ONNX models aren't available
+let useMockInference = true;
 let benchmarkRunning = false;
 let benchmarkResults = [];
+let paramCountCache = {}; // Cache parameter counts per model path
+let currentModelParamCount = null;
 
 // ─── DOM refs ────────────────────────────────────────────────────────────────
 const statusBar = document.getElementById('statusBar');
@@ -941,6 +1015,7 @@ const warningBanner = document.getElementById('warningBanner');
 const modelWarning = document.getElementById('modelWarning');
 const inferenceTimeEl = document.getElementById('inferenceTime');
 const modelLabelEl = document.getElementById('modelLabel');
+const paramCountInline = document.getElementById('paramCountInline');
 const resultTitle = document.getElementById('resultTitle');
 const btnCamera = document.getElementById('btnCamera');
 const btnDemo = document.getElementById('btnDemo');
@@ -952,6 +1027,186 @@ const benchStatusText = document.getElementById('benchStatusText');
 const benchResultsWrap = document.getElementById('benchResultsWrap');
 const benchTableBody = document.getElementById('benchTableBody');
 const benchDeviceInfo = document.getElementById('benchDeviceInfo');
+const paramCountDisplay = document.getElementById('paramCountDisplay');
+const paramCountValue = document.getElementById('paramCountValue');
+const paramCountDetail = document.getElementById('paramCountDetail');
+
+// ─── Protobuf Decoder for ONNX Parameter Counting ───────────────────────────
+function readVarint(bytes, offset) {
+  let result = 0;
+  let shift = 0;
+  let byte;
+  let pos = offset;
+  do {
+    if (pos >= bytes.length) throw new Error('Unexpected end of varint');
+    byte = bytes[pos++];
+    result += (byte & 0x7f) * Math.pow(2, shift);
+    shift += 7;
+    if (shift > 49) {
+      // For very large numbers, just cap it
+      break;
+    }
+  } while (byte & 0x80);
+  return [result, pos];
+}
+
+function parseProtobufFields(bytes) {
+  const fields = new Map();
+  let offset = 0;
+  
+  while (offset < bytes.length) {
+    let tag, newOffset;
+    try {
+      [tag, newOffset] = readVarint(bytes, offset);
+    } catch (e) {
+      break; // End of buffer or corrupted data
+    }
+    offset = newOffset;
+    const fieldNumber = tag >>> 3;
+    const wireType = tag & 0x7;
+    
+    if (!fields.has(fieldNumber)) fields.set(fieldNumber, []);
+    
+    switch (wireType) {
+      case 0: { // varint
+        let value, vo;
+        try {
+          [value, vo] = readVarint(bytes, offset);
+        } catch (e) {
+          return fields;
+        }
+        offset = vo;
+        fields.get(fieldNumber).push({ type: 'varint', value });
+        break;
+      }
+      case 1: { // 64-bit fixed
+        if (offset + 8 > bytes.length) return fields;
+        fields.get(fieldNumber).push({ type: 'fixed64', value: bytes.slice(offset, offset + 8) });
+        offset += 8;
+        break;
+      }
+      case 2: { // length-delimited
+        let len, lo;
+        try {
+          [len, lo] = readVarint(bytes, offset);
+        } catch (e) {
+          return fields;
+        }
+        offset = lo;
+        if (offset + len > bytes.length) return fields;
+        fields.get(fieldNumber).push({ type: 'bytes', value: bytes.slice(offset, offset + len) });
+        offset += len;
+        break;
+      }
+      case 5: { // 32-bit fixed
+        if (offset + 4 > bytes.length) return fields;
+        fields.get(fieldNumber).push({ type: 'fixed32', value: bytes.slice(offset, offset + 4) });
+        offset += 4;
+        break;
+      }
+      default:
+        // Unknown wire type, try to skip
+        return fields;
+    }
+  }
+  
+  return fields;
+}
+
+function extractDimsFromTensor(tensorBytes) {
+  const tensorFields = parseProtobufFields(tensorBytes);
+  const dimsEntries = tensorFields.get(1) || [];
+  const dims = [];
+  
+  for (const entry of dimsEntries) {
+    if (entry.type === 'varint') {
+      dims.push(entry.value);
+    } else if (entry.type === 'bytes') {
+      // Packed repeated int64
+      const packed = entry.value;
+      let off = 0;
+      while (off < packed.length) {
+        try {
+          let [val, newOff] = readVarint(packed, off);
+          off = newOff;
+          dims.push(val);
+        } catch (e) {
+          break;
+        }
+      }
+    }
+  }
+  
+  return dims;
+}
+
+async function getModelParameterCount(modelPath) {
+  // Check cache first
+  if (paramCountCache[modelPath] !== undefined) {
+    return paramCountCache[modelPath];
+  }
+  
+  try {
+    const response = await fetch(modelPath);
+    if (!response.ok) {
+      paramCountCache[modelPath] = null;
+      return null;
+    }
+    
+    const buffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    
+    // Parse ModelProto
+    const modelFields = parseProtobufFields(bytes);
+    
+    // field 7 = graph (GraphProto)
+    const graphEntries = modelFields.get(7);
+    if (!graphEntries || graphEntries.length === 0) {
+      paramCountCache[modelPath] = null;
+      return null;
+    }
+    
+    // Parse GraphProto
+    const graphFields = parseProtobufFields(graphEntries[0].value);
+    
+    // field 5 = initializer (repeated TensorProto)
+    const initializers = graphFields.get(5) || [];
+    
+    let totalParams = 0;
+    let tensorCount = 0;
+    
+    for (const init of initializers) {
+      if (init.type !== 'bytes') continue;
+      const dims = extractDimsFromTensor(init.value);
+      if (dims.length > 0) {
+        const count = dims.reduce((a, b) => a * b, 1);
+        totalParams += count;
+        tensorCount++;
+      }
+    }
+    
+    const result = { totalParams, tensorCount };
+    paramCountCache[modelPath] = result;
+    return result;
+  } catch (e) {
+    console.warn('Failed to parse model parameter count:', e);
+    paramCountCache[modelPath] = null;
+    return null;
+  }
+}
+
+function formatParamCount(count) {
+  if (count === null || count === undefined) return 'N/A';
+  if (count >= 1e9) return (count / 1e9).toFixed(2) + 'B';
+  if (count >= 1e6) return (count / 1e6).toFixed(2) + 'M';
+  if (count >= 1e3) return (count / 1e3).toFixed(1) + 'K';
+  return count.toLocaleString();
+}
+
+function formatParamCountFull(count) {
+  if (count === null || count === undefined) return 'N/A';
+  return count.toLocaleString();
+}
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 function init() {
@@ -969,6 +1224,8 @@ function init() {
     updateModelSelection();
     modelLoaded = false;
     session = null;
+    currentModelParamCount = null;
+    paramCountDisplay.classList.remove('visible');
   });
 
   fileInput.addEventListener('change', handleFileSelect);
@@ -1167,6 +1424,8 @@ async function loadModel() {
     // Simulate model loading delay
     await new Promise(r => setTimeout(r, 800));
     modelLoaded = true;
+    // Try to still parse param count from file even in mock mode
+    await updateParamCountDisplay();
     return;
   }
 
@@ -1183,10 +1442,33 @@ async function loadModel() {
       graphOptimizationLevel: 'all',
     });
     modelLoaded = true;
+    
+    // Get parameter count from the loaded model
+    await updateParamCountDisplay();
   } catch (err) {
     console.warn('Failed to load model, falling back to demo mode:', err.message);
     useMockInference = true;
     modelLoaded = true;
+    await updateParamCountDisplay();
+  }
+}
+
+async function updateParamCountDisplay() {
+  const model = MODELS[selectedModel];
+  if (!model) return;
+  
+  const paramResult = await getModelParameterCount(model.path);
+  
+  if (paramResult && paramResult.totalParams > 0) {
+    currentModelParamCount = paramResult.totalParams;
+    paramCountValue.textContent = formatParamCount(paramResult.totalParams);
+    paramCountDetail.textContent = `${formatParamCountFull(paramResult.totalParams)} parameters across ${paramResult.tensorCount} tensors`;
+    paramCountDisplay.classList.add('visible');
+  } else {
+    currentModelParamCount = null;
+    paramCountValue.textContent = 'N/A (model file not accessible)';
+    paramCountDetail.textContent = 'Model file could not be fetched for parameter counting';
+    paramCountDisplay.classList.add('visible');
   }
 }
 
@@ -1206,11 +1488,9 @@ async function runInference(data, dims) {
 }
 
 function mockInference() {
-  // Generate realistic-looking mock logits
   return new Promise(resolve => {
     const delay = 50 + Math.random() * 100;
     setTimeout(() => {
-      // Pick a random dominant class
       const dominantIdx = Math.floor(Math.random() * 4);
       const logits = [];
       for (let i = 0; i < 4; i++) {
@@ -1238,16 +1518,14 @@ function softmax(logits) {
 function renderResults(probs, elapsedMs) {
   resultsSection.classList.add('visible');
   resultsSection.querySelector('.card').classList.remove('fade-in');
-  void resultsSection.querySelector('.card').offsetWidth; // trigger reflow
+  void resultsSection.querySelector('.card').offsetWidth;
   resultsSection.querySelector('.card').classList.add('fade-in');
 
   const maxProb = Math.max(...probs);
   const topIdx = probs.indexOf(maxProb);
 
-  // Update title
   resultTitle.innerHTML = `Predicted: <em>${CLASSES[topIdx].name}</em>`;
 
-  // Confidence badge
   const pct = (maxProb * 100).toFixed(1);
   confidenceBadge.textContent = `${pct}% confidence`;
   confidenceBadge.className = 'confidence-badge ' + (
@@ -1255,21 +1533,18 @@ function renderResults(probs, elapsedMs) {
     maxProb >= 0.6 ? 'confidence-medium' : 'confidence-low'
   );
 
-  // Warning banner
   if (maxProb < 0.6) {
     warningBanner.classList.add('visible');
   } else {
     warningBanner.classList.remove('visible');
   }
 
-  // Update bars
   const rows = resultsBody.querySelectorAll('tr');
   rows.forEach((tr, idx) => {
     const p = (probs[idx] * 100).toFixed(1);
     const bar = tr.querySelector('.prob-bar');
     const val = tr.querySelector('.prob-value');
     
-    // Animate bar
     requestAnimationFrame(() => {
       bar.style.width = `${p}%`;
     });
@@ -1285,6 +1560,7 @@ function renderResults(probs, elapsedMs) {
   // Timing
   inferenceTimeEl.textContent = `${elapsedMs.toFixed(0)} ms`;
   modelLabelEl.textContent = MODELS[selectedModel].label;
+  paramCountInline.textContent = currentModelParamCount ? formatParamCount(currentModelParamCount) : 'N/A';
 }
 
 // ─── Benchmark: latency of all models on this device ─────────────────────────
@@ -1303,20 +1579,25 @@ async function runBenchmarkAll() {
   }
 
   const dims = [1, 3, CROP, CROP];
-  const dummyData = new Float32Array(3 * CROP * CROP); // synthetic zero tensor — timing only, output ignored
+  const dummyData = new Float32Array(3 * CROP * CROP);
 
   for (let i = 0; i < BENCHMARK_MODELS.length; i++) {
     const m = BENCHMARK_MODELS[i];
     setBenchStatus('inferring', `Benchmarking ${m.label}… (${i + 1}/${BENCHMARK_MODELS.length})`);
     let result;
     try {
+      // Get parameter count
+      const paramResult = await getModelParameterCount(m.path);
+      const paramCount = paramResult ? paramResult.totalParams : null;
+      
       result = await benchmarkModel(m, dummyData, dims);
+      result.paramCount = paramCount;
+      result.tensorCount = paramResult ? paramResult.tensorCount : null;
     } catch (err) {
       result = { error: err.message };
     }
     benchmarkResults.push({ ...m, ...result });
     renderBenchRow();
-    // Yield to the browser so the UI updates between models
     await new Promise(r => setTimeout(r, 0));
   }
 
@@ -1333,7 +1614,6 @@ async function runBenchmarkAll() {
 
 async function benchmarkModel(m, dummyData, dims) {
   if (useMockInference) {
-    // No deployed model files / WASM runtime — simulate plausible timing scaled by file size
     const t0 = performance.now();
     await new Promise(r => setTimeout(r, 60 + m.sizeMB * 6));
     const loadMs = performance.now() - t0;
@@ -1376,12 +1656,14 @@ function renderBenchRow() {
   const maxAvg = Math.max(...benchmarkResults.filter(r => r.avg != null).map(r => r.avg), 1);
   benchTableBody.innerHTML = benchmarkResults.map(r => {
     if (r.error) {
-      return `<tr><td class="class-name"><div>${r.label}</div></td><td colspan="5" style="color:var(--error);font-size:0.8rem;">Failed to load: ${r.error}</td></tr>`;
+      return `<tr><td class="class-name"><div>${r.label}</div></td><td colspan="6" style="color:var(--error);font-size:0.8rem;">Failed to load: ${r.error}</td></tr>`;
     }
     const pct = Math.max(4, (r.avg / maxAvg) * 100);
+    const paramStr = r.paramCount ? formatParamCount(r.paramCount) : 'N/A';
     return `<tr>
       <td class="class-name"><div>${r.label}</div></td>
       <td>${r.sizeMB.toFixed(2)} MB</td>
+      <td style="font-weight:600;color:var(--accent-light);font-variant-numeric:tabular-nums;">${paramStr}</td>
       <td>${r.loadMs.toFixed(0)} ms</td>
       <td>
         <div style="display:flex;align-items:center;gap:0.5rem;">
@@ -1413,8 +1695,10 @@ function setBenchStatus(type, text) {
 
 function exportBenchmarkResults() {
   if (!benchmarkResults.length) return;
-  const payload = benchmarkResults.map(({ key, label, sizeMB, loadMs, avg, min, max, times, error }) => ({
+  const payload = benchmarkResults.map(({ key, label, sizeMB, loadMs, avg, min, max, times, error, paramCount, tensorCount }) => ({
     key, label, sizeMB,
+    paramCount: paramCount ?? null,
+    tensorCount: tensorCount ?? null,
     loadMs: loadMs ?? null,
     avgLatencyMs: avg ?? null,
     minLatencyMs: min ?? null,
@@ -1448,7 +1732,6 @@ function generateDemoImage() {
   canvas.height = 512;
   const ctx = canvas.getContext('2d');
 
-  // Water background
   const gradient = ctx.createRadialGradient(256, 256, 50, 256, 256, 300);
   gradient.addColorStop(0, '#4a7c9b');
   gradient.addColorStop(0.5, '#2d5a72');
@@ -1456,12 +1739,10 @@ function generateDemoImage() {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 512, 512);
 
-  // Draw a stylized larva
   ctx.save();
   ctx.translate(256, 256);
   ctx.rotate(-0.3);
   
-  // Body segments
   ctx.fillStyle = '#8b7355';
   ctx.strokeStyle = '#5c4a32';
   ctx.lineWidth = 2;
@@ -1476,14 +1757,12 @@ function generateDemoImage() {
     ctx.stroke();
   }
 
-  // Head
   ctx.fillStyle = '#6b5a3e';
   ctx.beginPath();
   ctx.ellipse(-100, 0, 12, 10, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
 
-  // Hair/paddle
   ctx.strokeStyle = '#a08860';
   ctx.lineWidth = 1.5;
   for (let i = 0; i < 5; i++) {
@@ -1496,7 +1775,6 @@ function generateDemoImage() {
 
   ctx.restore();
 
-  // Add some water caustics
   ctx.globalAlpha = 0.1;
   for (let i = 0; i < 20; i++) {
     const x = Math.random() * 512;
@@ -1509,7 +1787,6 @@ function generateDemoImage() {
   }
   ctx.globalAlpha = 1;
 
-  // Convert to file
   canvas.toBlob((blob) => {
     const file = new File([blob], 'demo_larva.png', { type: 'image/png' });
     processFile(file);
